@@ -73,6 +73,19 @@ The REST API to the example app is described below.
         }
     ]
 	}
+
+### Response
+
+    HTTP/1.1 201 Created
+    Content-Type: application/json; charset=UTF-8
+	Content-Length: 123
+	Date: Sun, 03 Apr 2022 19:20:16 GMT
+
+    {
+    "customerId": "b0cad2ed-364b-4c69-904c-e4d32c33ccfc",
+    "success": true,
+    "message": "Customer Created Successfully"
+	}
 ### Error Response (Required Field not passed)
 
 	HTTP/1.1 400 Bad Request
@@ -87,18 +100,6 @@ The REST API to the example app is described below.
         "errorDateTime": "2022-04-03T21:26:18",
         "errorMessage": "/personalInformation required key [firstName] not found"
     }
-	}
-### Response
-
-    HTTP/1.1 201 Created
-    Content-Type: application/json; charset=UTF-8
-	Content-Length: 123
-	Date: Sun, 03 Apr 2022 19:20:16 GMT
-
-    {
-    "customerId": "b0cad2ed-364b-4c69-904c-e4d32c33ccfc",
-    "success": true,
-    "message": "Customer Created Successfully"
 	}
 ## Update Customer Data
 
