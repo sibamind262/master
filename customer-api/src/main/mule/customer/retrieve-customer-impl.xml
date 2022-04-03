@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+	<flow name="retrieve-customer-data-impl-flow"
+		doc:id="fb2cd15c-eadd-43f9-963e-b6973a724235">
+		<logger level="INFO" doc:name="Request Entry Log"
+			doc:id="fbdc86c9-6d2d-4402-b868-023f13f872a5"
+			message='#["Request Entry: Retrieve Customer Data for customerId " ++ vars.customerId]'
+			category="com.retrieve.customer.info" />
+		<!-- <raise-error doc:name="Raise error" doc:id="e97eb950-1ae3-4c36-87b5-f414ad7c6a8e" 
+			type="CUSTOM:TIMEOUT"/> -->
+		<http:request method="GET" doc:name="COSMOS GET Customer Mock Request" doc:id="da2cc142-352a-44bf-b172-114250f29f26" config-ref="cosmos-http-mock-request-configuration" path="/customers/{customer-id}">
+			<http:uri-params ><![CDATA[#[output application/java
+---
+{
+	"customer-id" : vars.customerId
+}]]]></http:uri-params>
+		</http:request>
+		<logger level="INFO" doc:name="Request Exit Log"
+			doc:id="bf5a581a-25c1-4099-ba47-2b5beabf97c4"
+			message='#["Request Exit: Retrieve Customer Data for customerId " ++ vars.customerId]'
+			category="com.retrieve.customer.info" />
+		<error-handler>
+			<on-error-propagate enableNotifications="true"
+				logException="true" doc:name="On Error Propagate"
+				doc:id="01efa04d-64e2-44e0-b53a-53a306f48b4a"
+				type="HTTP:CONNECTIVITY,HTTP:SERVICE_UNAVAILABLE">
+				<logger level="ERROR"
+					doc:name="System Not Available  Error Log"
+					doc:id="35613f6a-7ceb-4176-a171-cb21354d364b"
+					message='#["Error: SF is not available for customer creation"]'
+					category="com.retrieve.customer.error" />
+				<async doc:name="Async"
+					doc:id="589946fa-f8b3-4fea-aab0-8daac1e56ac7">
+					<flow-ref doc:name="store-error-flag-impl-flow"
+						doc:id="bfe6432c-7bda-4ae8-9dd0-f63a6c0c5f24"
+						name="store-error-flag-impl-flow" />
+				</async>
+				<set-variable
+					value='#["Salesforce is down. Please try after some time"]'
+					doc:name="Set errorMessage"
+					doc:id="0fd1dc01-2ca9-4d4b-9717-a8cabee4fd1e"
+					variableName="errorMessage" />
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true"
+				logException="true" doc:name="On Error Propagate"
+				doc:id="40e3e013-32f6-415a-9414-0b8bc6b43741" type="ANY">
+				<logger level="ERROR" doc:name="Error Log"
+					doc:id="3bf0c823-eed5-4457-ae91-cde82fb4053f"
+					message='#["Error: SF customer creation"]'
+					category="com.create.customer.sf.error" />
+				<set-variable value='#[error.errorMessage.payload]'
+					doc:name="Set errorMessage"
+					doc:id="232d8c7c-e98c-4544-a60d-e9b45dc8a83e"
+					variableName="errorMessage" />
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>

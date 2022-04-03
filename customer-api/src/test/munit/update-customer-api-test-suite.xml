@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:munit="http://www.mulesoft.org/schema/mule/munit"
+	xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xsi:schemaLocation="
+		http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+		http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+		http://www.mulesoft.org/schema/mule/munit-tools  http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd">
+	<munit:config name="customer-api-test-suite.xml" />
+	<munit:test name="patch-customer-data-test-suit-success"
+		doc:id="d2bd5340-f6a4-42e9-a82f-f8e2abc1fe71" description="Test">
+		<munit:behavior>
+			<munit-tools:mock-when
+				doc:name="Mock Check Error Flag Key"
+				doc:id="5ed4b68e-55fe-4933-93da-c83f2d64958a"
+				processor="os:contains">
+				<munit-tools:with-attributes>
+					<munit-tools:with-attribute
+						whereValue="Check Error Flag Key" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return>
+					<munit-tools:payload value="#[false]"
+						mediaType="application/java" />
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+			<munit-tools:mock-when
+				doc:name="Mock SF update Customer Response "
+				doc:id="e35779b5-5ca1-44d0-a556-d067dc60909f"
+				processor="ee:transform">
+				<munit-tools:with-attributes>
+					<munit-tools:with-attribute
+						whereValue="HTTP Mock Response SF update Customer"
+						attributeName="doc:name" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return>
+					<munit-tools:payload
+						value="#[MunitTools::getResourceAsString('mock/update-sf-customer-response.json')]" />
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+			<munit-tools:mock-when
+				doc:name="Mock COSMOS update Customer Response "
+				doc:id="3e8382a3-a968-4b13-adb8-fb3a407a8e2b"
+				processor="ee:transform">
+				<munit-tools:with-attributes>
+					<munit-tools:with-attribute
+						whereValue="HTTP Mock Response COSMOS update Customer"
+						attributeName="doc:name" />
+				</munit-tools:with-attributes>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution>
+			<munit:set-event doc:name="Set Event"
+				doc:id="6450f4ab-f6ab-415b-92d4-fcbe9569d4cc">
+				<munit:payload
+					value="#[MunitTools::getResourceAsString('input/updateCustomerRequest.json')]"
+					mediaType="application/json" />
+				<munit:attributes
+					value="#[{uriParams : {'customer-id' :'18350'}}]" />
+			</munit:set-event>
+			<flow-ref
+				doc:name="Flow-ref to patch:\customers\(customer-id):application\json:customer-api-config"
+				doc:id="5f9d3b16-cd6b-4c47-a20c-9c6d7105405a"
+				name="patch:\customers\(customer-id):application\json:customer-api-config" />
+		</munit:execution>
+		<munit:validation>
+			<munit-tools:assert-that
+				expression="#[output application/json ---payload]"
+				is="#[MunitTools::equalTo(readUrl('classpath://response/post-documents-offers-success-response.json', 'application/json'))]"
+				message="The response payload is incorrect!"
+				doc:name="Assert That - Payload is Expected" />
+		</munit:validation>
+	</munit:test>
+</mule>

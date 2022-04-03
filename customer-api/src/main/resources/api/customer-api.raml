@@ -1,0 +1,62 @@
+#%RAML 1.0
+baseUri: https://anypoint.mulesoft.com/mocking/api/v1/links/a5094985-f700-4b7f-8d61-5693985522e9/ # 
+title: Customer API
+version: 1.0
+description: |
+  Customer API is  to create, update and retrive customer data
+securitySchemes:
+  basicAuth: !include traits/basicAuth.raml
+traits:  
+  errorResponse: !include traits/errorResponse.raml 
+/health:
+  securedBy: [basicAuth]
+  description: To check health for customer API
+  get:
+    responses:
+      200:
+        body:
+          application/json:
+            example: !include examples/response/getHealthCheck.json
+/customers:
+  securedBy: [basicAuth]
+  is: [errorResponse]
+  post:
+    description: Create customer date in SF and COSMOS DB
+    body:
+      application/json:
+        example: !include examples/request/createCustomerRequest.json
+        type: !include types/request/createCustomerRequest.raml
+    responses:
+      201:
+        body:
+          application/json:
+            example: !include examples/response/createCustomerResponse.json
+            type: !include types/response/createCustomerResponse.raml
+  /{customer-id}:
+    securedBy: [basicAuth]
+    is: [errorResponse]
+    uriParameters:
+      customer-id:
+        description: customer-id of each cutomer
+        type: string
+        required: true
+        example: "4d4de7d6-7f5e-4778-9c70-babba6c25c55"
+    patch:
+      description: Update customer date in SF and COSMOS DB
+      body:
+        application/json:
+          example: !include examples/request/updateCustomerRequest.json
+          type: !include types/request/updateCustomerRequest.raml
+      responses:
+        200:
+          body:
+            application/json:
+              example: !include examples/response/updateCustomerResponse.json
+              type: !include types/response/updateCustomerResponse.raml
+    get:
+      responses:
+        200:
+          body:
+            application/json:
+              example: !include examples/response/retrieveCustomerResponse.json
+              type: !include types/response/retrieveCustomerResponse.raml

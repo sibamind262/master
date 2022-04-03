@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:workday="http://www.mulesoft.org/schema/mule/workday"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/workday http://www.mulesoft.org/schema/mule/workday/current/mule-workday.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd">
+	<sub-flow name="update-customer-impl-sub-flow" doc:id="35e59684-d36f-4f39-8511-851ae02b1369">
+		<logger level="INFO" doc:name="Implementation Entry Log" doc:id="bd1e9302-832e-4dfa-8f75-bac6ff2a6912" message='#["Implementation Entry: update Customer"]' category="com.update.customer.info" />
+		<choice doc:name="Choice" doc:id="7e809e25-8fce-4319-9039-b4cee2bd0430" >
+			<when expression="#[!isEmpty(vars.inputPayload.personalInformation)]">
+				<flow-ref doc:name="sf-update-customer-impl-flow" doc:id="d89c2c18-534f-47af-9792-c73c4d84f7ad" name="sf-update-customer-impl-flow" />
+			</when>
+		</choice>
+		<flow-ref doc:name="cosmos-update-customer-impl-flow" doc:id="492e82e1-da40-43b1-a244-c106f0311de2" name="cosmos-update-customer-impl-flow"/>
+		<ee:transform doc:name="Prepare Final Response" doc:id="ed596978-7a9d-4af8-8519-3b5c6b5c178c" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "customerId": vars.customerId,
+  "success": true,
+  "message":"Customer Updated Successfully"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Implementation Entry Log" doc:id="83b54c73-6f7e-4fc3-ad70-30e0ab6be028" message='#["Implementation Exit: update Customer"]' category="com.update.customer.info" />
+	</sub-flow>
+	<flow name="sf-update-customer-impl-flow" doc:id="fd41ec68-4c34-4a9a-9493-baf11271a952" >
+		<ee:transform doc:name="Prepare SF update customer Request" doc:id="ad5b0d49-3589-4ca0-ae58-db8876232077">
+			<ee:message>
+				<ee:set-payload resource="dw/updateSfCustomerRequest.dwl" />
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Request Entry Log" doc:id="ac9fb818-def7-4254-bfe5-06cfdf79f361" message='#["Request Entry: update Customer in SF for customerId " ++ vars.customerId]' category="com.update.customer.sf.info"/>
+		<!-- <raise-error doc:name="Raise error" doc:id="3e19418e-b903-4a51-9233-c4edf9ead65e" type="CUSTOM:TIMEOUT"/> -->
+		<http:request method="PATCH" doc:name="SF Update Customer Mock Request" doc:id="5b26283a-f447-4557-b550-3a797bec8acf" config-ref="sf-http-mock-request-configuration" path="/customers/{customer-id}">
+			<http:uri-params ><![CDATA[#[output application/java
+---
+{
+	"customer-id" : vars.customerId
+}]]]></http:uri-params>
+		</http:request>
+		<logger level="INFO" doc:name="Request Exit Log" doc:id="6dd78e47-d99c-4d15-8dec-80fba42e3a07" message='#["Request Exit: update Customer in SF for customerId " ++ vars.customerId]' category="com.update.customer.sf.info"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="2fee6c8f-254b-42ad-9501-01da911e8e9f" type="HTTP:CONNECTIVITY,HTTP:SERVICE_UNAVAILABLE">
+				<logger level="ERROR" doc:name="System Not Available  Error Log" doc:id="db72ea36-db6e-4e9e-ba63-4285b6ae64e6" message='#["Error: SF is not available for Update customer"]' category="com.update.customer.sf.error"/>
+				<async doc:name="Async" doc:id="2da4109f-e1cd-4c59-ae59-d1ce9b188295">
+					<flow-ref doc:name="store-error-flag-impl-flow" doc:id="e9ee103a-dd89-4877-9096-99170fb9ea98" name="store-error-flag-impl-flow" />
+				</async>
+				<set-variable value='#["Salesforce is down. Please try after some time"]' doc:name="Set errorMessage" doc:id="07360b6a-d0f6-41dd-b290-606053a1a273" variableName="errorMessage"/>
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="81b754a8-7b62-48a4-9c18-38b7f5949aef" type="ANY">
+			<logger level="ERROR" doc:name="Error Log" doc:id="304e8dfb-f8fd-4829-b85f-aa49fd130d35" message='#["Error: SF customer creation"]' category="com.update.customer.sf.error"/>
+				<set-variable value='#[error.errorMessage.payload]' doc:name="Set errorMessage" doc:id="93e96813-94b1-4c58-b03e-15cc7c375659" variableName="errorMessage"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="cosmos-update-customer-impl-flow" doc:id="0524f9b5-6fd6-42bd-b23c-d850a7d30462" >
+		<ee:transform doc:name="Prepare COSMOS update customer Request" doc:id="9b68bb7d-d591-4a91-9e19-68ada041e279">
+			<ee:message>
+				<ee:set-payload resource="dw/updateCosmosCustomerRequest.dwl" />
+			
+</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Request Entry Log" doc:id="c3cd4a74-f75c-42f6-b1c4-1ae31e10fe40" message='#["Request Entry: update Customer in COSMOS for customerId " ++ vars.customerId]' category="com.update.customer.cosmos.info"/>
+		<http:request method="PATCH" doc:name="COSMOS Update Customer Mock Request" doc:id="14b97e20-c266-4e59-bf42-cba7d180ee99" config-ref="cosmos-http-mock-request-configuration" path="/customers/{customer-id}">
+			<http:uri-params ><![CDATA[#[output application/java
+---
+{
+	"customer-id" : vars.customerId
+}]]]></http:uri-params>
+		</http:request>
+		<logger level="INFO" doc:name="Request Exit Log" doc:id="386376ea-7221-4bac-8f29-41c5181632fe" message='#["Request Exit: update Customer in COSMOS for customerId " ++ vars.customerId]' category="com.update.customer.cosmos.info"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="c533cda5-b918-48ee-8452-b5a900b98f4c" type="HTTP:CONNECTIVITY,HTTP:SERVICE_UNAVAILABLE">
+				<logger level="ERROR" doc:name="System Not Available Error Log" doc:id="64ec56da-27da-4a6c-8a68-2ad54dbcc604" message='#["Error: COSMOS is not available for update customer"]' category="com.update.customer.cosmos.error" />
+				<async doc:name="Async" doc:id="51e561cd-e5f3-4354-a648-70be685913bd" >
+					<flow-ref doc:name="store-error-flag-impl-flow" doc:id="4d555c25-1fdb-4f05-bc94-809aa705d3bf" name="store-error-flag-impl-flow"/>
+				</async>
+				<set-variable value='#["COSMOS is down. Please try after some time"]' doc:name="Set errorMessage" doc:id="2b2cd6b9-36a3-4f2b-a2d8-412ef64cde8e" variableName="errorMessage"/>
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="0864382e-1bbb-43db-a318-8608fffee62a" type="ANY">
+			<logger level="ERROR" doc:name="Error Log" doc:id="74c69476-4317-4ce9-87db-8e870bd7a4eb" message='#["Error: COSMOS customer creation"]' category="com.update.customer.cosmos.error"/>
+				<set-variable value='#[error.errorMessage.payload]' doc:name="Set errorMessage" doc:id="30311b07-705d-44bc-aa3a-39b7b51c9d70" variableName="errorMessage"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>

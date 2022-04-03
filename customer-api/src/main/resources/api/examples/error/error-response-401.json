@@ -1,0 +1,9 @@
+{
+  "errors":
+    {
+      "errorCode": "unauthorized",
+      "timestamp": "2019-08-13T14:31:03.683+01:00",
+      "errorMessage": "Response code 401 mapped as unauthorized."
+
+    }
+}

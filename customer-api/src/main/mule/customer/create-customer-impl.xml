@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<sub-flow name="create-customer-impl-sub-flow"
+		doc:id="24877a60-06b7-4bf2-9916-10b16c1fc928">
+		<logger level="INFO" doc:name="Implementation Entry Log"
+			doc:id="f3f410f4-9c64-4312-8ea9-ea0bfecd0ef1"
+			message='#["Implementation Entry: Create Customer"]'
+			category="com.create.customer.info" />
+		<set-variable value="#[uuid()]" doc:name="Set customerId"
+			doc:id="e021d060-b48e-4daa-9840-b5c6bc964ae9"
+			variableName="customerId" />
+		<flow-ref doc:name="sf-create-customer-impl-flow"
+			doc:id="3c61fd68-817f-4ce5-9844-3000b5e12e0e"
+			name="retrieve-customer-data-impl-flow" />
+		<flow-ref doc:name="cosmos-create-customer-impl-flow"
+			doc:id="c05b07c1-82aa-426d-bf91-03508bf4a1b8"
+			name="cosmos-create-customer-impl-flow" />
+		<logger level="INFO" doc:name="Implementation Entry Log"
+			doc:id="5ba42684-659d-47ff-8943-a0e10fd4326f"
+			message='#["Implementation Exit: Create Customer"]'
+			category="com.create.customer.info" />
+	</sub-flow>
+	<flow name="sf-create-customer-impl-flow"
+		doc:id="674f5331-2905-4c14-95a7-e56429fdf66e">
+		<ee:transform
+			doc:name="Prepare SF Create customer Request"
+			doc:id="1f1f4f1c-6ff8-41f6-bff5-001c7c23a600">
+			<ee:message>
+				<ee:set-payload
+					resource="dw/createSfCustomerRequest.dwl" />
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Request Entry Log"
+			doc:id="3438920a-2eae-4506-b2c6-699961ef2d6c"
+			message='#["Request Entry: Create Customer in SF for customerId " ++ vars.customerId]'
+			category="com.create.customer.sf.info" />
+		<!-- <raise-error doc:name="Raise error" doc:id="fbb2787e-24de-4424-8a11-ebef4596b0e1" 
+			type="CUSTOM:TIMEOUT"/> -->
+		<http:request method="POST"
+			doc:name="SF Create Customer Mock Request"
+			doc:id="fb81531b-24c8-4ad8-bc6b-c16d61111162"
+			config-ref="sf-http-mock-request-configuration" path="/customers">
+		</http:request>
+		<logger level="INFO" doc:name="Request Exit Log"
+			doc:id="03914f7d-8e96-4cfb-bdaa-54bcc66285c0"
+			message='#["Request Exit: Create Customer in SF for customerId " ++ vars.customerId]'
+			category="com.create.customer.sf.info" />
+		<error-handler>
+			<on-error-propagate enableNotifications="true"
+				logException="true" doc:name="On Error Propagate"
+				doc:id="e926879b-1ded-4991-aa4b-ca1d24d01755"
+				type="HTTP:CONNECTIVITY,HTTP:SERVICE_UNAVAILABLE">
+				<logger level="ERROR"
+					doc:name="System Not Available  Error Log"
+					doc:id="7398bf6c-cd85-443d-9f99-e3fc9928a11a"
+					message='#["Error: SF is not available for customer creation"]'
+					category="com.create.customer.sf.error" />
+				<async doc:name="Async"
+					doc:id="3e77d4f8-5d0b-4a6b-988f-f95dd1a1caa5">
+					<flow-ref doc:name="store-error-flag-impl-flow"
+						doc:id="3f35408a-87ac-48a8-a695-e8a8ce4a59a3"
+						name="store-error-flag-impl-flow" />
+				</async>
+				<set-variable
+					value='#["Salesforce is down. Please try after some time"]'
+					doc:name="Set errorMessage"
+					doc:id="be3d5398-81a9-4567-802e-d102bdd94765"
+					variableName="errorMessage" />
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true"
+				logException="true" doc:name="On Error Propagate"
+				doc:id="9244aea3-3c48-40e3-8976-e92b740bbfd9" type="ANY">
+				<logger level="ERROR" doc:name="Error Log"
+					doc:id="bce7d9c8-d208-4124-8ffd-bbb100c57391"
+					message='#["Error: SF customer creation"]'
+					category="com.create.customer.sf.error" />
+				<set-variable value='#[error.errorMessage.payload]'
+					doc:name="Set errorMessage"
+					doc:id="068c5927-5027-43ba-9aff-a8114205ab68"
+					variableName="errorMessage" />
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="cosmos-create-customer-impl-flow"
+		doc:id="f605502e-2a70-44bb-bb1d-77ff0cae49eb">
+		<ee:transform
+			doc:name="Prepare COSMOS Create customer Request"
+			doc:id="f3f30d64-4c10-48dd-80a5-9be265616d58">
+			<ee:message>
+				<ee:set-payload
+					resource="dw/createCosmosCustomerRequest.dwl" />
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Request Entry Log"
+			doc:id="c69beccf-fb99-4b22-8358-58a38f569258"
+			message='#["Request Entry: Create Customer in COSMOS for customerId " ++ vars.customerId]'
+			category="com.create.customer.cosmos.info" />
+		<!-- <raise-error doc:name="Raise error" doc:id="b19fb0af-60d7-4616-9f87-7b26e4e26b72" 
+			type="CUSTOM:TIMEOUT"/> -->
+		<http:request method="POST"
+			doc:name="COSMOS Create Customer Mock Request"
+			doc:id="f5ac2f52-5d12-44eb-a92e-21ee00fac885"
+			config-ref="cosmos-http-mock-request-configuration"
+			path="/customers">
+		</http:request>
+		<logger level="INFO" doc:name="Request Exit Log"
+			doc:id="65f85cf2-517a-4b97-a4fd-ce5f224e4c9e"
+			message='#["Request Exit: Create Customer in COSMOS for customerId " ++ vars.customerId]'
+			category="com.create.customer.cosmos.info" />
+		<error-handler>
+			<on-error-propagate enableNotifications="true"
+				logException="true" doc:name="On Error Propagate"
+				doc:id="811cecad-bd3f-4a1e-995b-f82973cdd7a1"
+				type="HTTP:CONNECTIVITY,HTTP:SERVICE_UNAVAILABLE">
+				<logger level="ERROR"
+					doc:name="System Not Available Error Log"
+					doc:id="4dbb83f0-1d8b-4ff4-afff-73c8e353f39f"
+					message='#["Error: COSMOS is not available for customer creation"]'
+					category="com.create.customer.cosmos.error" />
+				<async doc:name="Async"
+					doc:id="1cad22ac-7718-4116-99f2-3537d138bb2c">
+					<flow-ref doc:name="store-error-flag-impl-flow"
+						doc:id="93dc154f-7a36-4ae1-8180-a2f5aa11d815"
+						name="store-error-flag-impl-flow" />
+				</async>
+				<set-variable
+					value='#["COSMOS is down. Please try after some time"]'
+					doc:name="Set errorMessage"
+					doc:id="af6f8131-912d-4854-9d74-530fca72bdd5"
+					variableName="errorMessage" />
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true"
+				logException="true" doc:name="On Error Propagate"
+				doc:id="aa217e76-f859-477c-8c63-32c7ddb36e36" type="ANY">
+				<logger level="ERROR" doc:name="Error Log"
+					doc:id="eb3f4d87-aa38-4bf7-8e24-a05fc910e59f"
+					message='#["Error: COSMOS customer creation"]'
+					category="com.create.customer.cosmos.error" />
+				<set-variable value='#[error.errorMessage.payload]'
+					doc:name="Set errorMessage"
+					doc:id="02af69e4-a4a9-47d7-83d6-0e384e34103b"
+					variableName="errorMessage" />
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>

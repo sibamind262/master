@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="customer-api-main">
+		<http:listener
+			path="/api/*" config-ref="customer-api-httpListenerConfig">
+			<http:response
+				statusCode="#[vars.httpStatus default 200]">
+				<http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+			</http:response>
+			<http:error-response
+				statusCode="#[vars.httpStatus default 500]">
+				<http:body><![CDATA[#[payload]]]></http:body>
+				<http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+			</http:error-response>
+		</http:listener>
+		<apikit:router config-ref="customer-api-config" />
+	</flow>
+	<flow name="get:\health:customer-api-config">
+		<ee:transform
+			xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+			xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd"
+			doc:name="Set Health Status">
+			<ee:message>
+				<ee:set-payload
+					resource="dw/checkHealthMockResponse.dwl" />
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow
+		name="patch:\customers\(customer-id):application\json:customer-api-config">
+		<set-variable value="#[payload]"
+			doc:name="Set inputPayload"
+			doc:id="945d7fd4-f592-4214-8bfa-2f30b01e2083"
+			variableName="inputPayload" />
+		<set-variable
+			value="#[attributes.uriParams.'customer-id']"
+			doc:name="Set customerId"
+			doc:id="20a51cf2-9fad-4831-9a19-e60de700ba6a"
+			variableName="customerId" />
+		<flow-ref doc:name="check-error-flag-impl-sub-flow"
+			doc:id="56aa9e40-f68a-4c49-8889-58dec1890544"
+			name="check-error-flag-impl-sub-flow" />
+		<flow-ref doc:name="update-customer-impl-sub-flow"
+			doc:id="d4736bed-eadc-4123-9dd4-05f76ed0d005"
+			name="update-customer-impl-sub-flow" />
+	</flow>
+	<flow name="get:\customers\(customer-id):customer-api-config">
+		<set-variable
+			value="#[attributes.uriParams.'customer-id']"
+			doc:name="Set customerId"
+			doc:id="5282240f-3fcb-47d2-96a7-f1b9b4443ea0"
+			variableName="customerId" />
+		<flow-ref doc:name="check-error-flag-impl-sub-flow"
+			doc:id="28d0f079-d113-49e7-b7ac-b0406c82e83a"
+			name="check-error-flag-impl-sub-flow" />
+		<flow-ref doc:name="retrieve-customer-data-impl-flow"
+			doc:id="c120bd05-ed35-407d-bd31-d94d54276737"
+			name="retrieve-customer-data-impl-flow" />
+	</flow>
+	<flow name="post:\customers:application\json:customer-api-config">
+		<set-variable value="#[payload]"
+			doc:name="Set inputPayload"
+			doc:id="ee1de5e2-420c-4ec6-88a0-010c8551e288"
+			variableName="inputPayload" />
+		<flow-ref doc:name="check-error-flag-impl-sub-flow"
+			doc:id="35d60337-b96e-494a-94f1-a9336c8928e7"
+			name="check-error-flag-impl-sub-flow" />
+		<flow-ref doc:name="create-customer-impl-sub-flow"
+			doc:id="e93637e0-36d8-44bf-ba62-45a68c9bd723"
+			name="create-customer-impl-sub-flow" />
+	</flow>
+</mule>

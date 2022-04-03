@@ -1,0 +1,9 @@
+{
+  "errors":
+    {
+      "errorCode": "Method Not Allowed",
+      "timestamp": "2019-08-13T14:31:03.683+01:00",
+      "errorMessage": "Response code 405 mapped as Method Not Allowed."
+
+    }
+}

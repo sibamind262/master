@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+	
+	<configuration doc:name="Configuration"
+		doc:id="3829bf56-b8a5-45cb-8039-ce9434d8a5ad"
+		defaultErrorHandler-ref="globalErrorHandler" />
+	<http:listener-config
+		name="customer-api-httpListenerConfig">
+		<http:listener-connection host="0.0.0.0"
+			port="${http.port}" protocol="HTTPS">
+			<tls:context >
+				<tls:key-store type="jks" path="keystore.jks" alias="mule" keyPassword="password" password="password" />
+			</tls:context>
+		</http:listener-connection>
+	</http:listener-config>
+	<apikit:config name="customer-api-config"
+		api="customer-api.raml" outboundHeadersMapName="outboundHeaders"
+		httpStatusVarName="httpStatus" />
+	<configuration-properties
+		doc:name="Configuration properties"
+		doc:id="64755abf-06d0-4936-b155-945781ee9086"
+		file="properties/common.properties" />
+	<os:object-store name="Object_store"
+		doc:name="Object store" doc:id="78c214ff-9b6b-40a5-8726-2938928a0468" />
+	<!-- <api-gateway:autodiscovery
+		apiId="${api.asset.id}" ignoreBasePath="true"
+		doc:name="API Autodiscovery"
+		doc:id="e2522fa7-60de-4961-97d2-f811a409b8c4"
+		flowRef="customer-api-main" /> -->
+	<!-- <configuration-properties
+		doc:name="Configuration properties"
+		doc:id="297eaf38-e8f1-4212-9f6c-a53206a11e0c"
+		file="properties/${env}.properties" /> -->
+	<http:request-config
+		name="sf-http-mock-request-configuration"
+		doc:name="HTTP Request configuration"
+		doc:id="c03c88e0-1aed-4b7f-8ed5-64d23e8aca4d"
+		basePath="/mocking/api/v1/links/225c240c-c51c-4a08-8ee4-b37e6f3410de">
+		<http:request-connection protocol="HTTPS"
+			host="anypoint.mulesoft.com" port="443">
+			<tls:context>
+				<tls:trust-store insecure="true" />
+			</tls:context>
+		</http:request-connection>
+	</http:request-config>
+	<http:request-config
+		name="cosmos-http-mock-request-configuration"
+		doc:name="HTTP Request configuration"
+		doc:id="7add153d-dde8-450a-9731-3bb706e8f457"
+		basePath="/mocking/api/v1/links/d7543ee4-bf4a-4c47-93b2-2557b318ea4d">
+		<http:request-connection protocol="HTTPS"
+			host="anypoint.mulesoft.com">
+			<tls:context>
+				<tls:trust-store insecure="true" />
+			</tls:context>
+		</http:request-connection>
+	</http:request-config>
+</mule>

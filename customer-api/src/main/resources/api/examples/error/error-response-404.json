@@ -1,0 +1,9 @@
+{
+  "errors":
+    {
+      "errorCode": "Not Found",
+      "timestamp": "2019-08-13T14:31:03.683+01:00",
+      "errorMessage": "Response code 404 mapped as Not Found."
+
+    }
+}
