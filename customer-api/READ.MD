@@ -73,13 +73,14 @@ The REST API to the example app is described below.
         }
     ]
 	}
-### Error Response(Required Field not passed)
+### Error Response (Required Field not passed)
 
 	HTTP/1.1 400 Bad Request
 	Content-Type: application/json; charset=UTF-8; skipnullon="everywhere"
 	Content-Length: 174
 	Date: Sun, 03 Apr 2022 19:26:18 GMT
 	Connection: close
+	
 	{
     "error": {
         "errorCode": "BAD_REQUEST",
