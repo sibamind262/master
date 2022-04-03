@@ -1,6 +1,6 @@
 # Customer REST API
 
-This API is developed to create,update and retrieve customer data from Salesforce and COSMOS DB respectly.
+This API is developed to create, update and retrieve customer data from Salesforce and COSMOS DB.
 
 
 ## Assumptions
